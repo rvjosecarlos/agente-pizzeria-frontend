@@ -28,7 +28,7 @@ export default function OrdenesPage(){
             </TopTitleBar>
             <section className="flex mt-10 space-x-4">
                 {
-                    cardsResume.map( resume => <CardResume title={resume} value={"100"}/> )
+                    cardsResume.map( resume => <CardResume title={resume} value={"100"} key={resume}/> )
                 }
             </section>
             <main className="mt-7 flex gap-4">

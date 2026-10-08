@@ -2,7 +2,8 @@ import { useState } from "react";
 import TopTitleBar from "../components/TopTitleBar";
 import { formatDate } from "../utils/formatDate";
 import StandarButton from "../components/StandarButton";
-import { useNavigate } from "react-router-dom";
+import type z from "zod";
+import type { ItemSchema } from "../types";
 
 const data = [
     {
@@ -34,54 +35,59 @@ const data = [
       "name": "Pizza Hawaiana",
       "size": "Jumbo",
       "precio": 180
+    },
+    {
+      "id": "6ac5d79c457dba004de4dba1",
+      "name": "Pizza Hawaiana",
+      "size": "Familiar",
+      "precio": 130
+    },
+    {
+      "id": "6ac5d7b0457dba004de4dba4",
+      "name": "Pizza Hawaiana",
+      "size": "Jumbo",
+      "precio": 180
     }
   ]
 
-type ItemDetailType = {
-    itemId: string,
-    cantidad: number,
-    subtotal: number,
-    precio: number,
-    key: `${string}-${string}-${string}-${string}-${string}`
-};
+type Item = z.infer<typeof ItemSchema>;
+type ItemDetailType = Item & { cantidad: number, subtotal: number };
 
 export default function CrearPedidoPage(){
-    const [itemsList, setItemsList] = useState(data);
-    const [itemsDetails, setItemsDetails] = useState<ItemDetailType[]>([{ itemId: "", cantidad: 0, precio: 0, key: crypto.randomUUID(), subtotal: 0.0}]);
-    const navigate = useNavigate();
+    const [itemsOrderDetail, setItemsOrderDetail] = useState<ItemDetailType[]>([]);
+    const [total, setTotal] = useState(0);
 
-    const handleAgregarLinea = () => {
-        setItemsDetails( itemsDetails => [...itemsDetails, { itemId: "", cantidad: 0, precio: 0, key: crypto.randomUUID(), subtotal: 0.0 }]);
-    };
+    const handleLimpiar = () => {
+         setItemsOrderDetail([])
+         setTotal(0);
+    }
 
-    const handleQuitarLinea = (key: string) => {
-        setItemsDetails( itemsDetails => {
-            return itemsDetails.filter( itemDetail => itemDetail.key !== key )
-        });
-    };
-
-    const handleIniciarPrecioSubtotal = (value: string, itemDetail: ItemDetailType) => {
-        const regExp = new RegExp(/[0-9]+/g);
-        const valueArr = value.split("-");
-        if( valueArr.length < 2 || !regExp.test(valueArr[2]) ) return;
-        const precio = parseInt(valueArr[2]);
-        const updatedItemsDetail = itemsDetails.map( item => {
-            if( item.key === itemDetail.key ){
-                return {
-                    ...itemDetail,
-                    cantidad: 1,
-                    subtotal: precio,
-                    precio
-                };
+    const handleAddItem = (item: Item) => {
+        let duplicateItem = false;
+        let itemsOrder = itemsOrderDetail.map( itemOrderDetail => {
+            if( itemOrderDetail.id === item.id ){
+                duplicateItem = true;
+                return ({
+                    ...itemOrderDetail,
+                    cantidad: itemOrderDetail.cantidad + 1,
+                    subtotal: itemOrderDetail.precio * (itemOrderDetail.cantidad + 1)
+                });
             };
-            return item;
+            return itemOrderDetail;
         });
-        
-        setItemsDetails(updatedItemsDetail);
-    };
+        if( !duplicateItem ){
+            itemsOrder = [...itemsOrderDetail, {
+                ...item,
+                cantidad: 1,
+                subtotal: item.precio
+            }]
+        };
 
-    const handleCalcularSubtotal = (value: number, itemDetail: ItemDetailType) => {
-
+        const total = itemsOrder.reduce((acumulador, itemOrder) => {
+            return itemOrder.subtotal + acumulador;
+        },0);
+        setTotal(total);
+        setItemsOrderDetail(itemsOrder);
     };
 
     return(
@@ -89,130 +95,89 @@ export default function CrearPedidoPage(){
             <section>
                 <TopTitleBar title="Crear pedido" description={`${formatDate(new Date())}`}/>
             </section>
-            <main className="flex flex-1 mt-10 justify-center">
-                <form className="p-7 bg-white rounded-lg lg:w-2/3">
-                    <p className="text-xs font-light text-amber-950">Usa la misma lógica que la herramienta del LLM. Solo para la demostración.</p>
-                    <div className="py-4 space-y-4">
-                        <div className="flex justify-between gap-3">
-                            <div className="flex flex-col w-full">
-                                <label 
-                                    htmlFor="telefono"
-                                    className="text-sm font-bold"
-                                >
-                                    Teléfono
-                                </label>
-                                <input 
-                                    id="telefono" 
-                                    type="tel" 
-                                    className="border border-gray-300 rounded-lg p-2"
-                                    required
-                                    //pattern="[0-9]{2}-[0-9]{4}-[0-9]{4}"
-                                />
+            <div className="flex">
+                <main className="py-7 px-4 w-full mr-96 grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-1 gap-3">
+                    {
+                        data.map( (item, index) => 
+                            <button
+                                type="button"
+                                key={item.id} 
+                                className={`flex flex-col w-full p-4 justify-evenly text-sm rounded-lg border border-amber-200 cursor-pointer hover:bg-orange-600 hover:text-white ${ index%2 === 0 ? "bg-white" : "bg-amber-100" }`}
+                                onClick={() => handleAddItem(item)}
+                            >
+                                <p className="w-full font-bold">{item.name}</p>
+                                <p className="">Tamaño: {item.size}</p>
+                                <p className=" text-2xl font-semibold">${item.precio}</p>
+                            </button>
+                        )
+                    }
+                </main>
+                <section className="fixed top-0 right-0 mr-4 flex py-7 justify-center h-screen w-96 overflow-y-scroll bg-white">
+                    <form className="px-7 bg-white rounded-lg w-full">
+                        <p className="text-xs font-light text-amber-950">Usa la misma lógica que la herramienta del LLM. Solo para la demostración.</p>
+                        <div className="py-4 space-y-4">
+                            <div className="flex flex-col justify-between gap-3">
+                                <div className="flex flex-col w-full">
+                                    <label 
+                                        htmlFor="cliente"
+                                        className="text-sm font-bold"
+                                    >
+                                        Nombre del cliente 
+                                    </label>
+                                    <input 
+                                        id="cliente" 
+                                        type="text" 
+                                        className="border border-gray-300 rounded-lg p-2"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex flex-col w-full">
+                                    <label 
+                                        htmlFor="telefono"
+                                        className="text-sm font-bold"
+                                    >
+                                        Teléfono
+                                    </label>
+                                    <input 
+                                        id="telefono" 
+                                        type="tel" 
+                                        className="border border-gray-300 rounded-lg p-2"
+                                        required
+                                        //pattern="[0-9]{2}-[0-9]{4}-[0-9]{4}"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex flex-col w-full">
-                                <label 
-                                    htmlFor="cliente"
-                                    className="text-sm font-bold"
-                                >
-                                    Nombre del cliente 
-                                </label>
-                                <input 
-                                    id="cliente" 
-                                    type="text" 
-                                    className="border border-gray-300 rounded-lg p-2"
-                                    required
-                                />
+                            <div>
+                                <p className="text-sm font-bold">Detalle del pedido</p>
+                                <div className="w-full py-3">
+                                    {
+                                        itemsOrderDetail.map(itemOrder => 
+                                            <div className="flex flex-col justify-between py-1 border-y border-amber-100">
+                                                <p className="text-sm">{itemOrder.name} - {itemOrder.size} - ${itemOrder.precio}</p>
+                                                <div className="flex justify-between items-center">
+                                                    <p className="text-sm">Cantidad: {itemOrder.cantidad}</p>
+                                                    <p>Subtotal: <span className="font-semibold">${itemOrder.subtotal}</span></p>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
+                                </div>
                             </div>
                         </div>
                         <div>
-                            <p className="text-sm font-bold">Detalle del pedido</p>
-                            <div className="text-xs font-bold flex gap-3 py-3">
-                                <p className="w-full">Descripcion</p>
-                                <p className="w-20">Cantidad</p>
-                                <p className="w-16">Precio</p>
-                                <p className="w-38">Subtotal</p>
+                            <div className="h-0.5 bg-amber-100"/>
+                            <div className="flex justify-between py-4">
+                                <p className="">Total:</p>
+                                <p className="font-bold text-3xl">${total}</p>
                             </div>
-                            <div className="space-y-3">
-                                {
-                                    itemsDetails.map( itemDetail => 
-                                        <div 
-                                            className="flex justify-between gap-3"
-                                            key={itemDetail.key}
-                                        >
-                                            <div className="flex flex-col w-full">
-                                                <input 
-                                                    id="descripcion"
-                                                    list="items"
-                                                    name="lista-items"
-                                                    className="border border-gray-300 rounded-lg p-2 w-full" 
-                                                    required
-                                                    onChange={(e) => handleIniciarPrecioSubtotal(e.target.value, itemDetail)}
-                                                />
-                                                <datalist id="items">
-                                                    {
-                                                        itemsList.map( item => <option key={item.id} value={`${item.name} - ${item.size} - ${item.precio}`} /> )
-                                                    }
-                                                </datalist>
-                                            </div>
-                                            <div>
-                                                <input 
-                                                    id="cantidad"
-                                                    type="number" 
-                                                    min={1}
-                                                    value={itemDetail.cantidad}
-                                                    className="border w-14 border-gray-300 rounded-lg p-2 text-center" 
-                                                    onChange={() => {}}
-                                                />
-                                            </div>
-                                            <div>
-                                                <input 
-                                                    id="precio"
-                                                    type="text" 
-                                                    disabled
-                                                    value={itemDetail.precio}
-                                                    className="w-12 border-gray-300 rounded-lg p-2 text-center" 
-                                                />
-                                            </div>
-                                            <div>
-                                                <input 
-                                                    id="subtotal"
-                                                    type="text" 
-                                                    disabled
-                                                    value={itemDetail.subtotal}
-                                                    className="w-12 border-gray-300 rounded-lg p-2 text-center" 
-                                                />
-                                            </div>
-                                            <input
-                                                type="button"
-                                                value={"X"}
-                                                className="border w-10 h-10 border-gray-300 rounded-lg p-2 cursor-pointer"
-                                                onClick={() => handleQuitarLinea(itemDetail.key)}
-                                            />
-                                        </div>
-                                    )
-                                }
-                            </div>
-                            <StandarButton 
-                                name="+ Agregar línea"
-                                color="white"
-                                onClick={handleAgregarLinea}
-                                className="rounded-lg mt-3"
-                            />
                         </div>
-                    </div>
-                    <div>
-                        <div className="h-0.5 bg-amber-100"/>
-                        <div className="flex justify-between py-4">
-                            <p className="">Total:</p>
-                            <p className="font-bold text-3xl">{`$400`}</p>
+                        <div className="flex justify-end gap-3">
+                            <StandarButton name="Limpiar" color="white" onClick={handleLimpiar} className="rounded-lg"/>    
+                            <StandarButton name="Crear Pedido" color="orange" onClick={()=>{}} className="rounded-lg"/>
                         </div>
-                    </div>
-                    <div className="flex justify-end gap-3">
-                        <StandarButton name="Cancelar" color="white" onClick={() => navigate("/")} className="rounded-lg"/>    
-                        <StandarButton name="Crear Pedido" color="orange" onClick={()=>{}} className="rounded-lg"/>
-                    </div>
-                </form>
-            </main>
+                    </form>
+                </section>
+            </div>
         </div>
     )
 };
