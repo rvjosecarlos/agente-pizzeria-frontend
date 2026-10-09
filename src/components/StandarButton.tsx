@@ -11,11 +11,11 @@ export default function StandarButton({name, color, onClick, className}: ButtonP
         "orange": "bg-orange-700 text-white hover:bg-orange-600"
     }
     return (
-        <button 
+        <input 
+            type="button"
             className={`${bgColor[color]} px-3 py-2 font-semibold cursor-pointer ${className}`}
             onClick={() => onClick()}
-        >
-            {name}
-        </button>
+            value={name}
+        />
     )
 }

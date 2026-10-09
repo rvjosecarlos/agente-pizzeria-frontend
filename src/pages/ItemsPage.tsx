@@ -1,41 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
+import { MoonLoader } from "react-spinners";
 import FormNewItem from "../components/FormNewItem";
 import TopTitleBar from "../components/TopTitleBar";
-
-const data = [
-    {
-      "id": "6ac5cef5128d53999596fd90",
-      "name": "Pizza Hawaiana",
-      "size": "Chica",
-      "precio": 70
-    },
-    {
-      "id": "6ac5d783457dba004de4dba9",
-      "name": "Pizza Hawaiana",
-      "size": "Mediana",
-      "precio": 90
-    },
-    {
-      "id": "6ac5d791457dba004de4dbaa",
-      "name": "Pizza Hawaiana",
-      "size": "Grande",
-      "precio": 110
-    },
-    {
-      "id": "6ac5d79c457dba004de4dbab",
-      "name": "Pizza Hawaiana",
-      "size": "Familiar",
-      "precio": 130
-    },
-    {
-      "id": "6ac5d7b0457dba004de4dbac",
-      "name": "Pizza Hawaiana",
-      "size": "Jumbo",
-      "precio": 180
-    },
-    
-  ]
+import { getItems } from "../api/itemsAPI";
 
 export default function ItemsPage(){
+    const { data, isPending, isError, error } = useQuery({
+        queryKey: ["items"],
+        queryFn: getItems
+    });
+
+    if(isPending) return <div className="ml-56 h-screen flex justify-center items-center"><MoonLoader color="#36d7b7"/></div>;
+    if(isError) return <div className="ml-56 h-screen flex justify-center items-center"><p>{error.message}</p></div>
+
     return(
         <div className="p-10 ml-56">
             <TopTitleBar title="Items" description="Catálogo de la pizzería"/>
