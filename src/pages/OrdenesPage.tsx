@@ -9,6 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getOrders } from "../api/ordersAPI";
 import type z from "zod";
 import type { OrderSchema } from "../types";
+import { useEffect, useState } from "react";
+import { elapsedTime } from "../utils/elapsedTime";
 
 export type OrderType = z.infer<typeof OrderSchema>;
 
@@ -16,11 +18,16 @@ const cardsResume = ["Pedidos activos", "Ventas del día", "Ticket promedio", "C
 
 export default function OrdenesPage(){
     const navigate = useNavigate();
-    const { data, isPending, isError, error } = useQuery({
+    const { data, isPending, isError, error, dataUpdatedAt } = useQuery({
         queryKey: ["ordenes"],
         queryFn: getOrders,
-        refetchInterval: 10000
+        refetchInterval: 20000
     });
+    const [ahora, setAhora] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setAhora(Date.now() + 1000), 1000);
+        return () => clearInterval(id);
+    }, []);
 
     if(isPending) return <div className="ml-56 h-screen flex justify-center items-center"><MoonLoader color="#36d7b7"/></div>;
     if(isError) return <div className="ml-56 h-screen flex justify-center items-center"><p>{error.message}</p></div>
@@ -39,7 +46,7 @@ export default function OrdenesPage(){
     console.log({ ordenesClasificadas });
     if(ordenesClasificadas) return (
         <div className="p-10 ml-56">
-            <TopTitleBar title="Pedidos" description={`${formatDate(new Date())} - Actualizado hace 8s`}>
+            <TopTitleBar title="Pedidos" description={`${formatDate(new Date())} - Actualizado hace ${elapsedTime(dataUpdatedAt, ahora)}`}>
                 <StandarButton 
                     color="white" 
                     name="Agregar item" 
@@ -62,7 +69,7 @@ export default function OrdenesPage(){
                 <div className="p-2 rounded-lg bg-amber-100 space-y-3 w-1/4">
                     <div className="flex justify-between py-3 px-2">
                         <p className="font-bold">Nuevo</p>
-                        <p className="px-1 rounded bg-blue-200">{ordenesClasificadas.nuevo.length}</p>
+                        <p className="px-1 rounded bg-blue-200 text-xl font-semibold">{ordenesClasificadas.nuevo.length}</p>
                     </div>
                     {
                         ordenesClasificadas.nuevo.map( order => 
@@ -76,7 +83,7 @@ export default function OrdenesPage(){
                 <div className="p-2 rounded-lg bg-amber-100 space-y-3 w-1/4">
                     <div className="flex justify-between py-3 px-2">
                         <p className="font-bold">En preparación</p>
-                        <p className="px-1 rounded bg-blue-200">{ordenesClasificadas.preparando.length}</p>
+                        <p className="px-1 rounded bg-blue-200 text-xl font-semibold">{ordenesClasificadas.preparando.length}</p>
                     </div>
                     {
                         ordenesClasificadas.preparando.map( order => 
@@ -90,7 +97,7 @@ export default function OrdenesPage(){
                 <div className="p-2 rounded-lg bg-amber-100 space-y-3 w-1/4">
                     <div className="flex justify-between py-3 px-2">
                         <p className="font-bold">Enviado</p>
-                        <p className="px-1 rounded bg-blue-200">{ordenesClasificadas.enviado.length}</p>
+                        <p className="px-1 rounded bg-blue-200 text-xl font-semibold">{ordenesClasificadas.enviado.length}</p>
                     </div>
                     {
                         ordenesClasificadas.enviado.map( order => 
@@ -104,7 +111,7 @@ export default function OrdenesPage(){
                 <div className="p-2 rounded-lg bg-amber-100 space-y-3 w-1/4">
                     <div className="flex justify-between py-3 px-2">
                         <p className="font-bold">Completado</p>
-                        <p className="px-1 rounded bg-blue-200">{ordenesClasificadas.completado.length}</p>
+                        <p className="px-1 rounded bg-blue-200 text-xl font-semibold">{ordenesClasificadas.completado.length}</p>
                     </div>
                     {
                         ordenesClasificadas.completado.map( order => 

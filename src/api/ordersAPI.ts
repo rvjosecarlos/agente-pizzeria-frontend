@@ -1,6 +1,7 @@
 import type { UpdatedOrder } from "../components/CardPedido";
 import { api } from "../config/axios";
-import { OrderSchema, UpdatedOrderSchema } from "../types";
+import type { CreateOrderType } from "../pages/CrearPedidoPage";
+import { CreateOrderSchema, OrderSchema, UpdatedOrderSchema } from "../types";
 
 export const getOrders = async () => {
     const url = "/ordenes";
@@ -18,6 +19,16 @@ export const updateOrderState = async (orderUpdated: UpdatedOrder) => {
     const { success, data, error } = UpdatedOrderSchema.safeParse(result.data.data);
     if( !success ){
         throw new Error(`Error al validar los datos de actualización de la orden: ${error.message}`);
+    };
+    return data;
+};
+
+export const createOrder = async (createOrder: CreateOrderType ) => {
+    const url = "/orden";
+    const result = await api.post(url, createOrder);
+    const { success, data, error } = CreateOrderSchema.safeParse(result.data.data);
+    if( !success ){
+        throw new Error(`Error en FRONT al validar la respuesta del servidor CREATE_ORDER: ${error.message}`);
     };
     return data;
 };

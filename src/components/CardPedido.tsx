@@ -4,6 +4,7 @@ import StandarButton from "./StandarButton";
 import type z from "zod";
 import type { UpdatedOrderSchema } from "../types";
 import { updateOrderState } from "../api/ordersAPI";
+import { elapsedTime } from "../utils/elapsedTime";
 
 type CardPedidoProps = {
     order: OrderType
@@ -11,9 +12,6 @@ type CardPedidoProps = {
 
 export type UpdatedOrder = z.infer<typeof UpdatedOrderSchema>;
 
-const SEGUNDOS = 60000;
-const MINUTOS = 3600000;
-const HORAS = 86400000;
 const ESTADOS = ["nuevo", "preparando", "enviado", "completado", "cancelado"] as const;
 
 export default function CardPedido({ order }: CardPedidoProps){
@@ -43,27 +41,13 @@ export default function CardPedido({ order }: CardPedidoProps){
 
     const orderDate = new Date(order.updatedAt).getTime();
     const today = Date.now();
-    const elapsedTime = today - orderDate;
-    let elapsedTimeString = "";
-    if( elapsedTime < SEGUNDOS){
-        elapsedTimeString = Math.floor( elapsedTime / 1000) + " seg.";
-    }
-    else if( elapsedTime < MINUTOS ){
-        elapsedTimeString = Math.floor( elapsedTime / 1000 / 60) + " min."
-    }
-    else if( elapsedTime < HORAS ){
-        elapsedTimeString = Math.floor( elapsedTime / 1000 / 60 / 60) + " hrs."
-    }
-    else{
-        const a = Math.floor( elapsedTime / 1000 / 60 / 60 / 24)
-        elapsedTimeString = a > 1 ? a + " días." : a + " día."
-    };
+    const elapsedTimeString = elapsedTime(orderDate, today);
 
     return(
         <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 space-y-2">
             <div className="flex justify-between gap-7">
                 <p className="font-bold">#{order.id.slice(order.id.length-4).toUpperCase()}</p>
-                <p className={`bg-green-400 px-2 py-1 text-xs font-light rounded-xl`}>{`WhatsApp`}</p>
+                <p className={` px-2 py-1 text-xs font-light rounded-xl ${order.origen === "whatsapp" ? "bg-green-400" : "bg-sky-300"}`}>{order.origen}</p>
             </div>
             <div>
                 <p className="text-sm font-bold">{order.clientId.name}</p>

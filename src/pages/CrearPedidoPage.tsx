@@ -3,59 +3,41 @@ import TopTitleBar from "../components/TopTitleBar";
 import { formatDate } from "../utils/formatDate";
 import StandarButton from "../components/StandarButton";
 import type z from "zod";
-import type { ItemSchema } from "../types";
-
-const data = [
-    {
-      "id": "6ac5cef5128d53999596fd90",
-      "name": "Pizza Hawaiana",
-      "size": "Chica",
-      "precio": 70
-    },
-    {
-      "id": "6ac5d783457dba004de4dba9",
-      "name": "Pizza Hawaiana",
-      "size": "Mediana",
-      "precio": 90
-    },
-    {
-      "id": "6ac5d791457dba004de4dbaa",
-      "name": "Pizza Hawaiana",
-      "size": "Grande",
-      "precio": 110
-    },
-    {
-      "id": "6ac5d79c457dba004de4dbab",
-      "name": "Pizza Hawaiana",
-      "size": "Familiar",
-      "precio": 130
-    },
-    {
-      "id": "6ac5d7b0457dba004de4dbac",
-      "name": "Pizza Hawaiana",
-      "size": "Jumbo",
-      "precio": 180
-    },
-    {
-      "id": "6ac5d79c457dba004de4dba1",
-      "name": "Pizza Hawaiana",
-      "size": "Familiar",
-      "precio": 130
-    },
-    {
-      "id": "6ac5d7b0457dba004de4dba4",
-      "name": "Pizza Hawaiana",
-      "size": "Jumbo",
-      "precio": 180
-    }
-  ]
+import type { CreateOrderSchema, ItemSchema } from "../types";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getItems } from "../api/itemsAPI";
+import { MoonLoader } from "react-spinners";
+import { createOrder } from "../api/ordersAPI";
+import { useNavigate } from "react-router-dom";
 
 type Item = z.infer<typeof ItemSchema>;
 type ItemDetailType = Item & { cantidad: number, subtotal: number };
+export type CreateOrderType = z.infer<typeof CreateOrderSchema>;
+
+const MOSTRADOR = "mostrador" as const;
 
 export default function CrearPedidoPage(){
     const [itemsOrderDetail, setItemsOrderDetail] = useState<ItemDetailType[]>([]);
     const [total, setTotal] = useState(0);
+    const [spinner, setSpinner] = useState(false);
+    const navigate = useNavigate();
+
+    const { data, isPending, isError, error } = useQuery({
+        queryKey: ["items"],
+        queryFn: getItems
+    });
+
+    const mutation = useMutation({
+        mutationFn: createOrder,
+        onSuccess: () => {
+            alert("Orden creada");
+            setSpinner(false);
+        },
+        onError: (error) => {
+            alert(error)
+            setSpinner(false);
+        }
+    });
 
     const handleLimpiar = () => {
          setItemsOrderDetail([])
@@ -90,7 +72,28 @@ export default function CrearPedidoPage(){
         setItemsOrderDetail(itemsOrder);
     };
 
-    return(
+    const handleCreateOrder = () => {
+        if(itemsOrderDetail.length === 0 ) return;
+        setSpinner(true);
+        const newOrder = {
+            clientId: import.meta.env.VITE_CLIENTE_MOSTRADOR as string,
+            total: total,
+            origen: MOSTRADOR,
+            orderDetailIds: itemsOrderDetail.map( item => {
+                return {
+                    itemId: item.id,
+                    cantidad: item.cantidad
+                }
+            })
+        }
+        mutation.mutate(newOrder);
+        navigate("/");
+    };
+
+    if(isPending) return <div className="ml-56 h-screen flex justify-center items-center"><MoonLoader color="#36d7b7"/></div>;
+    if(isError) return <div className="ml-56 h-screen flex justify-center items-center"><p>{error.message}</p></div>
+
+    if(data) return(
         <div className="p-10 ml-56">
             <section>
                 <TopTitleBar title="Crear pedido" description={`${formatDate(new Date())}`}/>
@@ -116,6 +119,7 @@ export default function CrearPedidoPage(){
                     <form className="px-7 bg-white rounded-lg w-full">
                         <p className="text-xs font-light text-amber-950">Usa la misma lógica que la herramienta del LLM. Solo para la demostración.</p>
                         <div className="py-4 space-y-4">
+                            {/*
                             <div className="flex flex-col justify-between gap-3">
                                 <div className="flex flex-col w-full">
                                     <label 
@@ -146,7 +150,8 @@ export default function CrearPedidoPage(){
                                         //pattern="[0-9]{2}-[0-9]{4}-[0-9]{4}"
                                     />
                                 </div>
-                            </div>
+                            </div> 
+                            */}
                             <div>
                                 <p className="text-sm font-bold">Detalle del pedido</p>
                                 <div className="w-full py-3">
@@ -171,10 +176,15 @@ export default function CrearPedidoPage(){
                                 <p className="font-bold text-3xl">${total}</p>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-3">
-                            <StandarButton name="Limpiar" color="white" onClick={handleLimpiar} className="rounded-lg"/>    
-                            <StandarButton name="Crear Pedido" color="orange" onClick={()=>{}} className="rounded-lg"/>
-                        </div>
+                        {
+                            spinner ? 
+                                <div className="flex justify-center w-full"><MoonLoader size={30}/></div>
+                            :
+                                <div className="flex justify-end gap-3">
+                                    <StandarButton name="Limpiar" color="white" onClick={handleLimpiar} className="rounded-lg"/>    
+                                    <StandarButton name="Crear Pedido" color="orange" onClick={handleCreateOrder} className="rounded-lg"/>
+                                </div>
+                        }
                     </form>
                 </section>
             </div>

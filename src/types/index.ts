@@ -4,7 +4,8 @@ const ItemSchema = z.object({
     id: z.string(), 
     name: z.string(),
     size: z.string(),
-    precio: z.number()
+    precio: z.number(),
+    codigo: z.string()
 });
 
 const ClientSchema = z.object({
@@ -26,8 +27,20 @@ const OrderSchema = z.object({
     orderDetailIds: z.array(OrderDetailsSchema),
     total: z.number(),
     estado: z.literal(["nuevo", "preparando", "enviado", "completado", "cancelado"]),
+    origen: z.string(),
     createdAt: z.string(),
     updatedAt: z.string()
+});
+
+const CreateOrderSchema = OrderSchema.pick({
+    total: true
+}).extend({
+    clientId: z.string(),
+    orderDetailIds: z.union([z.array(z.string()), z.array(z.object({
+        itemId: z.string(),
+        cantidad: z.number()
+    }))]),
+    origen: z.literal(["mostrador"])
 });
 
 const UpdatedOrderSchema = OrderSchema.pick({
@@ -39,4 +52,4 @@ const UpdatedOrderSchema = OrderSchema.pick({
     orderDetailIds: z.array(z.string())
 });
 
-export { ItemSchema, ClientSchema, OrderDetailsSchema, OrderSchema, UpdatedOrderSchema };
+export { ItemSchema, ClientSchema, OrderDetailsSchema, OrderSchema, UpdatedOrderSchema, CreateOrderSchema };

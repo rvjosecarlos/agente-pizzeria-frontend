@@ -6,10 +6,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addItem } from "../api/itemsAPI";
 
 export type ItemType = z.infer<typeof ItemSchema>;
-export type NewItemType = Pick<ItemType, "name" | "precio" | "size">;
+export type NewItemType = Pick<ItemType, "name" | "precio" | "size" | "codigo">;
 
 export default function FormNewItem(){
-    const [newItem, setNewItem] = useState<NewItemType>({ name: "", precio: 0, size: "" });
+    const [newItem, setNewItem] = useState<NewItemType>({ name: "", precio: 0, size: "", codigo: "" });
     
     const queryClient = useQueryClient();
     const mutation = useMutation({
@@ -60,7 +60,7 @@ export default function FormNewItem(){
                     className="rounded-lg"
                     color="orange"
                     name="Agregar"
-                    onClick={()=> mutation.mutate(newItem)}
+                    onClick={()=> mutation.mutate({...newItem, codigo: (newItem.name + " " + newItem.precio).trim().replaceAll(" ", "-")})}
                 />
             </form>
         </div>
